@@ -427,8 +427,6 @@ def is_blurry(pil_img, threshold=100):
 # In[46]:
 
 
-pip install streamlit
-
 
 # In[47]:
 
