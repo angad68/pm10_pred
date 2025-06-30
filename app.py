@@ -8,7 +8,7 @@ import cv2
 # Page Configuration
 # -----------------------------
 st.set_page_config(page_title="PM10 Prediction", layout="centered")
-st.title("🌤️ PM10 Air Quality Prediction with Image Quality Checks")
+st.title("🌤️ PM10 Air Quality Prediction")
 
 # -----------------------------
 # Image Validation Functions
