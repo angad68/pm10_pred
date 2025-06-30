@@ -4,15 +4,6 @@ pillow
 numpy
 tensorflow==2.15.0
 seaborn
-matplotlib.pyplot
-tensorflow.keras.preprocessing.image
+matplotlib
 sklearn
-sklearn.model_selection
-tensorflow.keras
-tensorflow.keras.models
-tensorflow.keras.layers 
-tensorflow.keras.optimizers
-tensorflow.keras.callbacks
-tensorflow.keras.preprocessing
-sklearn.metrics
-sklearn.utils 
+
