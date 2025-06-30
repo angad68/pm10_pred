@@ -14,31 +14,40 @@ st.title("🌤️ PM10 Air Quality Prediction")
 # Image Validation Functions
 # -----------------------------
 def is_blurry(pil_img, threshold=100):
+    """Check if the image is blurry using Laplacian variance."""
     img = np.array(pil_img.convert("L"))
     lap_var = cv2.Laplacian(img, cv2.CV_64F).var()
     return lap_var < threshold
 
 def is_dark(pil_img, threshold=20):
+    """Check if the image is too dark based on average brightness."""
     img = np.array(pil_img.convert("L"))
     brightness = np.mean(img)
     return brightness < threshold
 
 def is_overexposed(pil_img, threshold=240, white_ratio=0.5):
+    """Check if the image is overexposed (too many white pixels)."""
     img = np.array(pil_img.convert("L"))
     white_pixels = np.sum(img > threshold)
     return (white_pixels / img.size) > white_ratio
 
-def is_sky_like(pil_img, blue_ratio_thresh=0.2):
-    img = np.array(pil_img.resize((224, 224)))  # Resize for consistency
-    blue_pixels = np.sum(
-        (img[:, :, 2] > 100) & (img[:, :, 0] < 100) & (img[:, :, 1] < 100)
-    )
+def is_sky_like(pil_img, blue_ratio_thresh=0.08):
+    """
+    Check if the image likely contains sky.
+    More relaxed: detects light blue and blue-dominant regions.
+    """
+    img = np.array(pil_img.resize((224, 224)))
+    r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
+
+    sky_mask = (b > 90) & (b > r + 15) & (b > g + 15)
+    sky_pixels = np.sum(sky_mask)
     total_pixels = img.shape[0] * img.shape[1]
-    return (blue_pixels / total_pixels) > blue_ratio_thresh
+
+    return (sky_pixels / total_pixels) > blue_ratio_thresh
 
 def is_low_resolution(pil_img, min_size=(100, 100)):
+    """Check if the image resolution is too low."""
     return pil_img.size[0] < min_size[0] or pil_img.size[1] < min_size[1]
-
 # -----------------------------
 # PM10 Advisory Generator
 # -----------------------------
