@@ -8,15 +8,36 @@ import cv2
 # Page Configuration
 # -----------------------------
 st.set_page_config(page_title="PM10 Prediction", layout="centered")
-st.title("🌤️ PM10 Air Quality Prediction with Blur Detection")
+st.title("🌤️ PM10 Air Quality Prediction with Image Quality Checks")
 
 # -----------------------------
-# Blurriness Detection Function
+# Image Validation Functions
 # -----------------------------
 def is_blurry(pil_img, threshold=100):
-    img = np.array(pil_img.convert("L"))  # convert to grayscale
+    img = np.array(pil_img.convert("L"))
     lap_var = cv2.Laplacian(img, cv2.CV_64F).var()
     return lap_var < threshold
+
+def is_dark(pil_img, threshold=20):
+    img = np.array(pil_img.convert("L"))
+    brightness = np.mean(img)
+    return brightness < threshold
+
+def is_overexposed(pil_img, threshold=240, white_ratio=0.5):
+    img = np.array(pil_img.convert("L"))
+    white_pixels = np.sum(img > threshold)
+    return (white_pixels / img.size) > white_ratio
+
+def is_sky_like(pil_img, blue_ratio_thresh=0.2):
+    img = np.array(pil_img.resize((224, 224)))  # Resize for consistency
+    blue_pixels = np.sum(
+        (img[:, :, 2] > 100) & (img[:, :, 0] < 100) & (img[:, :, 1] < 100)
+    )
+    total_pixels = img.shape[0] * img.shape[1]
+    return (blue_pixels / total_pixels) > blue_ratio_thresh
+
+def is_low_resolution(pil_img, min_size=(100, 100)):
+    return pil_img.size[0] < min_size[0] or pil_img.size[1] < min_size[1]
 
 # -----------------------------
 # PM10 Advisory Generator
@@ -53,15 +74,25 @@ model = load_model()
 # -----------------------------
 # File Upload
 # -----------------------------
-uploaded_file = st.file_uploader("Upload a sky image", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("📤 Upload a **sky image** (JPG or PNG)", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image_pil = Image.open(uploaded_file).convert("RGB")
     st.image(image_pil, caption="Uploaded Image", use_column_width=True)
 
-    if is_blurry(image_pil):
-        st.warning("\u26a0\ufe0f The uploaded image seems blurry. Please retake a clear photo of the sky.")
+    # Perform all image validation checks
+    if is_low_resolution(image_pil):
+        st.error("❌ The image resolution is too low. Please upload a higher-quality image.")
+    elif is_dark(image_pil):
+        st.error("❌ The uploaded image appears too dark (possibly a black screen). Please upload a daytime photo.")
+    elif is_overexposed(image_pil):
+        st.error("❌ The image is overexposed. Try to avoid direct sunlight or glare.")
+    elif is_blurry(image_pil):
+        st.warning("⚠️ The image seems blurry. Please retake a clearer photo of the sky.")
+    elif not is_sky_like(image_pil):
+        st.warning("⚠️ The image doesn't seem to contain enough sky. Please capture a clear sky image.")
     else:
+        # Image is valid – run prediction
         img = image_pil.resize((224, 224))
         img = np.array(img)
         img = tf.keras.applications.vgg16.preprocess_input(img)
