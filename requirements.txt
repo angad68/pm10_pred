@@ -5,5 +5,5 @@ numpy
 tensorflow==2.15.0
 seaborn
 matplotlib
-sklearn
+scikit-learn
 
